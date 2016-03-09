@@ -5,74 +5,85 @@ import java.lang.reflect.Method
 import scala.language.higherKinds
 import scala.language.implicitConversions
 import scala.language.reflectiveCalls
-
 import scala.util.matching.Regex
 
 trait Grammars extends Parsers {
 
-	def encoder[E](grammar: GrammarDefinition[E, Any])(implicit options: GrammarPreferences): Encoder[E] = grammar match {
-		case Empty => new EmptyEncoder()
-		case Fail => throw new RuntimeException("grammar reached fail point")
-		case v: Value => new ValueEncoder()
-		case t: Terminal => new TerminalEncoder(t.key)
-		case a: Append[_, _, _, _] => new AppendEncoder(encoder(a.left), encoder(a.right))
-		case t: Transform[_, _, _, _] => new TransformEncoder(encoder(t.target))(t.tx)
-		case o: Or[_, _, _, _, _, _] => new OrEncoder(encoder(o.left), encoder(o.right))
-		case r: Repeat[_, _] => new RepeatEncoder(encoder(r.body), encoder(r.separator))
+	protected sealed trait GrammarDefinition[-E, +D] {
+		def encoder(implicit preferences: GrammarPreferences) = {
+			def makeEncoder[E](grammar: GrammarDefinition[E, Any]): Encoder[E] = grammar match {
+				case Empty => new EmptyEncoder
+				case Fail => throw new RuntimeException("grammar reached fail point")
+				case l: Lexeme => new ValueEncoder
+				case c: Constant => new TerminalEncoder(c.key)
+				case a: Append[_, _, _, _] => new AppendEncoder(makeEncoder(a.left), makeEncoder(a.right))
+				case t: Transform[_, _, _, _] => new TransformEncoder(makeEncoder(t.target))(t.tx)
+				case o: Or[_, _, _, _, _, _] => new OrEncoder(makeEncoder(o.left), makeEncoder(o.right))
+				case r: Repeat[_, _] => new RepeatEncoder(makeEncoder(r.body), makeEncoder(r.separator))
+			}
+
+			makeEncoder(this)
+		}
+
+		def decoder(implicit preferences: GrammarPreferences) = {
+			def makeDecoder[D](grammar: GrammarDefinition[Nothing, D])(implicit preferences: GrammarPreferences): CodeParser[D] = grammar match {
+				case Empty => EmptyParser
+				case Fail => throw new RuntimeException("grammar reached fail point")
+				case l: Lexeme => new ValueParser(l.restriction)
+				case c: Constant => new TerminalParser(c.key)
+				case a: Append[_, _, _, _] => new AppendParser(makeDecoder(a.left), makeDecoder(a.right))
+				case t: Transform[_, _, _, _] => new TransformParser(makeDecoder(t.target))(t.xt)
+				case o: Or[_, _, _, _, _, _] => new OrParser(makeDecoder(o.left), makeDecoder(o.right))
+				case r: Repeat[_, _] => new RepeatParser(makeDecoder(r.body), makeDecoder(r.separator))
+			}
+
+			makeDecoder(this)
+		}
 	}
 
-	def decoder[D](grammar: GrammarDefinition[Nothing, D])(implicit options: GrammarPreferences): CodeParser[D] = grammar match {
-		case Empty => EmptyParser
-		case Fail => throw new RuntimeException("grammar reached fail point")
-		case v: Value => new ValueParser(v.restriction)
-		case t: Terminal => new TerminalParser(t.key)
-		case a: Append[_, _, _, _] => new AppendParser(decoder(a.left), decoder(a.right))
-		case t: Transform[_, _, _, _] => new TransformParser(decoder(t.target))(t.xt)
-		case o: Or[_, _, _, _, _, _] => new OrParser(decoder(o.left), decoder(o.right))
-		case r: Repeat[_, _] => new RepeatParser(decoder(r.body), decoder(r.separator))
-	}
+	protected object Empty extends GrammarDefinition[Any, Null]
 
-	sealed trait GrammarDefinition[-E, +D] {
-		def encoder(implicit options: GrammarPreferences) = Grammars.this.encoder(this)
-		def decoder(implicit options: GrammarPreferences) = Grammars.this.decoder(this)
-	}
+	protected object Fail extends GrammarDefinition[Any, Nothing]
 
-	object Empty extends GrammarDefinition[Any, Null]
+	protected class Lexeme(val restriction: Regex) extends GrammarDefinition[String, String]
 
-	object Fail extends GrammarDefinition[Any, Nothing]
+	protected class Constant(val key: Symbol) extends GrammarDefinition[String, String]
 
-	class Value(val restriction: Regex) extends GrammarDefinition[String, String]
-
-	class Terminal(val key: Symbol) extends GrammarDefinition[String, String]
-
-	class Append[LE, LD, RE, RD](_left: => GrammarDefinition[LE, LD], _right: => GrammarDefinition[RE, RD]) extends GrammarDefinition[(LE, RE), (LD, RD)] {
-		lazy val left = _left
-		lazy val right = _right
-	}
-
-	class Transform[E, D, TE, TD](_target: => GrammarDefinition[E, D])(val tx: TE => E)(val xt: D => TD) extends GrammarDefinition[TE, TD] {
+	protected class Transform[E, D, TE, TD](_target: => GrammarDefinition[E, D])(val tx: TE => E)(val xt: D => TD) extends GrammarDefinition[TE, TD] {
 		lazy val target = _target
 	}
 
-	class Or[LE <: E, RE <: E, E, LD <: D, RD <: D, D](_left: => GrammarDefinition[LE, LD], _right: => GrammarDefinition[RE, RD]) extends GrammarDefinition[E, D] {
+	protected class Append[LE, LD, RE, RD](_left: => GrammarDefinition[LE, LD], _right: => GrammarDefinition[RE, RD]) extends GrammarDefinition[(LE, RE), (LD, RD)] {
 		lazy val left = _left
 		lazy val right = _right
 	}
 
-	class Repeat[E, D](_body: => GrammarDefinition[E, D], _separator: => GrammarDefinition[Null, Any] = Empty) extends GrammarDefinition[List[E], List[D]] {
+	protected class Or[LE <: E, RE <: E, E, LD <: D, RD <: D, D](_left: => GrammarDefinition[LE, LD], _right: => GrammarDefinition[RE, RD]) extends GrammarDefinition[E, D] {
+		lazy val left = _left
+		lazy val right = _right
+	}
+
+	protected class Repeat[E, D](_body: => GrammarDefinition[E, D], _separator: => GrammarDefinition[Null, Any] = Empty) extends GrammarDefinition[List[E], List[D]] {
 		lazy val body = _body
 		lazy val separator = _separator
 	}
 
 }
 
+//TODO: Rename: Shouldn't this be SourcePreferences or something like that?
+case class GrammarPreferences(constants: Map[Symbol, String],	encodingPreferences: EncodingPreferences)
+
+//▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+// SYNTACTIC SUGAR
+//▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
 trait GrammarSugar extends Grammars {
 
 	type Grammar[T] = GrammarDefinition[T, T]
 
-	implicit def SymbolToGrammar(s: Symbol) = new Terminal(s)
-	implicit def RegexToGrammar(r: Regex) = new Value(r)
-	implicit def StringToGrammar(s: String) = new Value(s.r)
+	implicit def SymbolToGrammar(s: Symbol) = new Constant(s)
+	implicit def RegexToGrammar(r: Regex) = new Lexeme(r)
+	implicit def StringToGrammar(s: String) = new Lexeme(s.r)
 
 	implicit class GrammarExt[E, D](g: GrammarDefinition[E, D]) extends Grammarable[E, D](g)
 	implicit class SymbolExt(s: Symbol) extends Grammarable(SymbolToGrammar(s))
@@ -111,50 +122,9 @@ trait GrammarSugar extends Grammars {
 				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: p9 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8, p9)
 				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: p9 :: p10 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
 				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: p9 :: p10 :: p11 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)
+				case _ => throw new RuntimeException("Unsupported case") // TODO: Better error?
 				//TODO? etc
 			}).asInstanceOf[T])
 		}
 	)
-}
-
-//▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-// PREFERENCES
-//▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-
-case class GrammarPreferences(
-	terminals: Map[Symbol, String],
-	encodingPreferences: EncodingPreferences)
-
-case class EncodingPreferences(
-		protected val spacing: Set[LocationRule[Any]] = Set(),
-		protected val tabulationSequence: String = "\t",
-		protected val tabulationSize: Int = 1,
-		protected val lineBreaks: Map[LocationRule[Any], Int] = Map(),
-		protected val tabulationLevelIncrements: Map[LocationRule[Any], Int] = Map(),
-		protected val sortOrders: Set[Order[_]] = Set()) {
-	def tabulationLevelIncrement(locationKey: LocationKey[_]) = tabulationLevelIncrements.collectFirst{ case (l, i) if l.matches(locationKey) => i } getOrElse 0
-	def space(locationKey: LocationKey[_]) = spacing.collectFirst{ case l if l.matches(locationKey) => " " } getOrElse ""
-	def lineBreak(locationKey: LocationKey[_]) = "\n" * lineBreaks.collect{ case (l, count) if l.matches(locationKey) => count }.sum
-	def tabulation(level: Int) = tabulationSequence * tabulationSize * level
-	def sortOrder[T](target: Encoder[List[T]]) = sortOrders.collectFirst { case order @ Order(`target`) => order.criteria.asInstanceOf[(T, T) => Boolean] }
-}
-
-case class Order[T](target: Encoder[List[T]])(val criteria: (T, T) => Boolean)
-
-trait Location[+T] {
-	def on[U >: T](target: U) = LocationKey(this, target)
-	def apply(condition: PartialFunction[Any, Boolean] = null) = LocationRule(this)(Option(condition))
-}
-case class After[T](target: Encoder[T]) extends Location[T]
-case class Before[T](target: Encoder[T]) extends Location[T]
-case class On[T](target: Encoder[T]) extends Location[T]
-case class InBetween[T](target: Encoder[List[T]]) extends Location[(T, T, List[T])]
-
-protected case class LocationKey[+T](val location: Location[T], val target: T)
-
-protected case class LocationRule[+T](location: Location[T])(condition: Option[PartialFunction[Any, Boolean]]) {
-	def matches[U >: T](key: LocationKey[U]) = {
-		key.location == location && condition.forall{ condition => condition.applyOrElse(key.target, { _: Any => false })
-		}
-	}
 }

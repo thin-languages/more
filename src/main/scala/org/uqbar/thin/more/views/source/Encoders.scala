@@ -6,11 +6,12 @@ import scala.util.Try
 
 import org.uqbar.utils.collections.immutable.IdentityMap
 
+//TODO: Change name. This should not be the generic word 'Encoder' but an specific term for the 'source encoder'. No. SourceEncoder won't do.
 abstract class Encoder[-T](implicit grammarPreferences: GrammarPreferences) {
 	implicit def StringToEncoderResult(s: String) = EncoderResult(s)
 
 	def preferences = grammarPreferences.encodingPreferences
-	def terminals = grammarPreferences.terminals
+	def terminals = grammarPreferences.constants
 
 	def apply(target: T, level: Int = 0) = for {
 		content <- _encode(target, level + preferences.tabulationLevelIncrement(On(this) on target))
@@ -99,4 +100,44 @@ case class EncoderResult(text: String = "", references: IdentityMap[Any, Range] 
 	}
 
 	def dropReferences = EncoderResult(text)
+}
+
+//▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+// PREFERENCES
+//▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+case class EncodingPreferences(
+		protected val spacing: Set[LocationRule[Any]] = Set(),
+		protected val tabulationSequence: String = "\t",
+		protected val tabulationSize: Int = 1,
+		protected val lineBreaks: Map[LocationRule[Any], Int] = Map(),
+		protected val tabulationLevelIncrements: Map[LocationRule[Any], Int] = Map(),
+		protected val sortOrders: Set[Order[_]] = Set()) {
+	def tabulationLevelIncrement(locationKey: LocationKey[_]) = tabulationLevelIncrements.collectFirst{ case (l, i) if l.matches(locationKey) => i } getOrElse 0
+	def space(locationKey: LocationKey[_]) = spacing.collectFirst{ case l if l.matches(locationKey) => " " } getOrElse ""
+	def lineBreak(locationKey: LocationKey[_]) = "\n" * lineBreaks.collect{ case (l, count) if l.matches(locationKey) => count }.sum
+	def tabulation(level: Int) = tabulationSequence * tabulationSize * level
+	def sortOrder[T](target: Encoder[List[T]]) = sortOrders.collectFirst { case order @ Order(`target`) => order.criteria.asInstanceOf[(T, T) => Boolean] }
+}
+
+//TODO: Adjust Locations and Orders to work on grammars instead of encoders
+
+case class Order[T](target: Encoder[List[T]])(val criteria: (T, T) => Boolean)
+
+trait Location[+T] {
+	def on[U >: T](target: U) = LocationKey(this, target)
+	def apply(condition: PartialFunction[Any, Boolean] = null) = LocationRule(this)(Option(condition))
+}
+case class After[T](target: Encoder[T]) extends Location[T]
+case class Before[T](target: Encoder[T]) extends Location[T]
+case class On[T](target: Encoder[T]) extends Location[T]
+case class InBetween[T](target: Encoder[List[T]]) extends Location[(T, T, List[T])]
+
+protected case class LocationKey[+T](val location: Location[T], val target: T)
+
+protected case class LocationRule[+T](location: Location[T])(condition: Option[PartialFunction[Any, Boolean]]) {
+	def matches[U >: T](key: LocationKey[U]) = {
+		key.location == location && condition.forall{ condition => condition.applyOrElse(key.target, { _: Any => false })
+		}
+	}
 }

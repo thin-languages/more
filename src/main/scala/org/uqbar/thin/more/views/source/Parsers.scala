@@ -18,7 +18,7 @@ trait Parsers extends RegexParsers {
 	
 	class ValueParser(restriction: Regex) extends CodeParser[String] { def _inner = restriction }
 	
-	class TerminalParser(key: Symbol)(implicit options: GrammarPreferences) extends CodeParser[String] { def _inner = if (options.terminals(key) == " ") "".r else options.terminals(key) } //TODO: Find better way to handle the space as parseable value
+	class TerminalParser(key: Symbol)(implicit options: GrammarPreferences) extends CodeParser[String] { def _inner = if (options.constants(key) == " ") "".r else options.constants(key) } //TODO: Find better way to handle the space as parseable value
 	
 	class AppendParser[T, S](left: => CodeParser[T], right: => CodeParser[S]) extends CodeParser[(T, S)] { def _inner = left.inner ~ right.inner ^^ { case l ~ r => (l, r) } }
 	
