@@ -185,9 +185,9 @@ declared anywhere, without affecting languages that won't use them.
 
 ##Related Projects
 
-For a growing sanitized set of modules that work well with each other you can check the (Less Thin-Language)[https://github.com/thin-languages/Less]
+For a growing sanitized set of modules that work well with each other you can check the [Less Thin-Language](https://github.com/thin-languages/Less)
 
-We are also working on (Slimdown)[https://github.com/thin-languages/Slimdown] a Thin-IDE, to provide desktop support to any *More* based language.
+We are also working on [Slimdown](https://github.com/thin-languages/Slimdown) a Thin-IDE, to provide desktop support to any *More* based language.
 
 ##Contributions
 
