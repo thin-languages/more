@@ -125,7 +125,7 @@ object YourLanguage extends Language
   with BarModule
 ```
 
-From the code you can tell the the `FancyView` need the language to extend the `Fanciable` trait in order to work. As in
+From the code you can tell the `FancyView` need the language to extend the `Fanciable` trait in order to work. As in
 any other view, the LanguageRequirement traits are probably going to be the place where the hard stuff takes place.
 Of course, you could design your modules to implement those requirements themselves, but that would make very
 hard to implement a new module (since it would have to provide all logic needed by any views it would be used on). *More*
