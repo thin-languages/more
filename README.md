@@ -1,4 +1,7 @@
 # More
+
+[![Build Status](https://travis-ci.org/thin-languages/More.svg?branch=master)](https://travis-ci.org/thin-languages/More)
+
 A Scala based framework for developing modular [Thin-Languages](thin-languages.uqbar.org)
 
 ##Architecture Basics
