@@ -1,7 +1,7 @@
 # More
 
 [![Build Status](https://travis-ci.org/thin-languages/More.svg?branch=master)](https://travis-ci.org/thin-languages/More)
-[![Stories in Ready](https://badge.waffle.io/thin-languages/more.svg?label=ready&title=Ready)](http://waffle.io/thin-languages/more)
+[![Stories in Ready](https://badge.waffle.io/thin-languages/more.svg?label=help%20wanted&title=Ready)](http://waffle.io/thin-languages/more)
 
 A Scala based framework for developing modular [Thin-Languages](thin-languages.uqbar.org)
 
