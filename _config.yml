@@ -1,0 +1,6 @@
+name: More
+markdown: redcarpet
+highlighter: rouge
+permalink: pretty
+exclude: ["less","node_modules","Gruntfile.js","package.json","README.md"]
+gems: ['jekyll-paginate', 'rouge']

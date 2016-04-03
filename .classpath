@@ -1,0 +1,13 @@
+<classpath>
+  <classpathentry output="target/scala-2.11/classes" kind="src" path="src/main/scala"/>
+  <classpathentry output="target/scala-2.11/test-classes" kind="src" path="src/test/scala"/>
+  <classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+  <classpathentry sourcepath="/home/ernesto/.ivy2/cache/org.uqbar/voodoo_2.11/srcs/voodoo_2.11-1.3.5-sources.jar" kind="lib" path="/home/ernesto/.ivy2/cache/org.uqbar/voodoo_2.11/jars/voodoo_2.11-1.3.5.jar"/>
+  <classpathentry sourcepath="/home/ernesto/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/srcs/scala-parser-combinators_2.11-1.0.4-sources.jar" kind="lib" path="/home/ernesto/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar"/>
+  <classpathentry sourcepath="/home/ernesto/.ivy2/cache/org.uqbar/identity-map_2.11/srcs/identity-map_2.11-1.1.0-sources.jar" kind="lib" path="/home/ernesto/.ivy2/cache/org.uqbar/identity-map_2.11/jars/identity-map_2.11-1.1.0.jar"/>
+  <classpathentry sourcepath="/home/ernesto/.ivy2/cache/org.scalatest/scalatest_2.11/srcs/scalatest_2.11-2.2.5-sources.jar" kind="lib" path="/home/ernesto/.ivy2/cache/org.scalatest/scalatest_2.11/bundles/scalatest_2.11-2.2.5.jar"/>
+  <classpathentry sourcepath="/home/ernesto/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/srcs/scala-xml_2.11-1.0.2-sources.jar" kind="lib" path="/home/ernesto/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.2.jar"/>
+  <classpathentry sourcepath="/home/ernesto/.ivy2/cache/org.uqbar/parser-test_2.11/srcs/parser-test_2.11-1.0.11-sources.jar" kind="lib" path="/home/ernesto/.ivy2/cache/org.uqbar/parser-test_2.11/jars/parser-test_2.11-1.0.11.jar"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="output" path="bin"/>
+</classpath>
