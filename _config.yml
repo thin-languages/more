@@ -1,3 +1,8 @@
+
+baseurl: ""
+url: "http://thin-languages.github.io/more"
+
+
 name: More
 markdown: redcarpet
 highlighter: rouge
