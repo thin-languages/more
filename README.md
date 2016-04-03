@@ -23,28 +23,28 @@ the language you want.
 To declare a *Language Module* on More, simply create a `trait` and define inside it any structure you need to support the
 new concepts. All concepts should extend the `LanguageConcept` trait or another, higher order, concept.
 
-```scala
+~~~scala
 trait YourModule {
 	trait YourNewConcept extends LanguageConcept
 }
-```
+~~~
 
 You can then declare a language by just combining any modules you want!
 
-```scala
+~~~scala
 object YourLanguage extends Language
 	with OneModule
 	with OtherModule
-```
+~~~
 
 Of course, some modules would need to use or redefine concepts presented by other modules. Scala language already provides an
 easy way of handling this: just linearize your traits as needed.
 
-```scala
+~~~scala
 trait YourModule extends SomeOtherModule {
 	case class YourNewConcept(aField: SomeOtherModuleTypeConcept) extends SomeOtherModuleConcept
 }
-```
+~~~
 
 Remember that, in order to remain true to the Thin ideas, the language concepts themselves should only be the *abstract
 representation of your language ideas*. That means that they should refrain from containing syntactic related elements. This
@@ -63,12 +63,12 @@ frontend tool can use to render them and let a user interact with a program defi
 
 With this in mind, the `LanguageView` trait should be quite simple to understand:
 
-```scala
+~~~scala
 trait LanguageView[ViewModel, ViewOptions, LanguageRequirement] {
 	def encode(target: LanguageConcept)(implicit language: LanguageRequirement, options: ViewOptions): Try[ViewModel]
 	def decode(target: ViewModel)(implicit language: LanguageRequirement,  options: ViewOptions): Try[LanguageConcept]
 }
-```
+~~~
 
 Where:
 - `ViewModel` is the type the view knows how to render. E.g. the ViewModel of a very simple view that renders code could be
@@ -98,7 +98,7 @@ language's programs.
 ###The Presenter Pattern
 Let's say you have created some language modules and would like use them along with a view:
 
-```scala
+~~~scala
 // Your Modules
 trait FooModule {
   case class Foo(n: Int) extends LanguageConcept
@@ -123,7 +123,7 @@ trait Fanciable {
 object YourLanguage extends Language
   with FooModule
   with BarModule
-```
+~~~
 
 From the code you can tell the `FancyView` need the language to extend the `Fanciable` trait in order to work. As in
 any other view, the LanguageRequirement traits are probably going to be the place where the hard stuff takes place.
@@ -135,7 +135,7 @@ breaking the views.
 
 Alternatively, you can just add a huge implementation of the language requirement in the language itself:
 
-```scala
+~~~scala
 object YourLanguage extends Language with Fanciable
   with FooModule
   with BarModule {
@@ -146,7 +146,7 @@ object YourLanguage extends Language with Fanciable
     case _ => super.getTheFancy(target)
   }
 }
-```
+~~~
 
 Althought this would kind of solve the problem it would be very repetitive, since every language that wants to render these
 modules with this view would have to repeat this code (and probably extend it to cover all the modules it wants to use),
@@ -158,7 +158,7 @@ others) without becoming coupled with the view itself.
 
 Here is how the final version would be:
 
-```scala
+~~~scala
 
 trait FanciableFoo extends Fanciable {on: Foo =>
   def getTheFancy(target: LanguageConcept) = target match {
@@ -177,7 +177,7 @@ trait FanciableBar extends Fanciable { on: Bar =>
 object YourLanguage extends Language
   with FooModule with FanciableFoo
   with BarModule with FanciableBar
-```
+~~~
 
 Notice how, if properly implemented, there would be no need for the language to declare any code, but it could be used,
 as any other type, to solve conflicts between modules or presenters. Also notice that each presenter should only need to be
