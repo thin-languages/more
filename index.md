@@ -5,18 +5,17 @@ title: More
 
 # More
 
-[![Build Status](https://travis-ci.org/thin-languages/more.svg?branch=master)](https://travis-ci.org/thin-languages/More)
+[![Build Status](https://travis-ci.org/thin-languages/more.svg?branch=master)](https://travis-ci.org/thin-languages/more)
 [![Stories in Ready](https://badge.waffle.io/thin-languages/more.svg?label=help%20wanted&title=Ready)](http://waffle.io/thin-languages/more)
 
 A Scala based framework for developing modular [Thin-Languages](thin-languages.uqbar.org)
 
-## Architecture Basics
+##Architecture Basics
 Instead of defining a language as a single monolithic unit which comprises all functional abstractions along with syntax and
 semanthics, *More* proposes a modular aproach: Turn every feature of your language into a separate module and compose them on
 the run!
 
-### Modules
-
+###Modules
 You can think of each concept available on a language as a separate feature, that can be model as an independent module (For
 example, *booleans*, *integers*, *objects* and *functions* can be isolated modules. More abstract tools like *default
 parameters*, *inheritance* and *destructive asignation* can be modules too).
@@ -29,35 +28,35 @@ the language you want.
 To declare a *Language Module* on More, simply create a `trait` and define inside it any structure you need to support the
 new concepts. All concepts should extend the `LanguageConcept` trait or another, higher order, concept.
 
-```scala
+~~~scala
 trait YourModule {
 	trait YourNewConcept extends LanguageConcept
 }
-```
+~~~
 
 You can then declare a language by just combining any modules you want!
 
-```scala
+~~~scala
 object YourLanguage extends Language
 	with OneModule
 	with OtherModule
-```
+~~~
 
 Of course, some modules would need to use or redefine concepts presented by other modules. Scala language already provides an
 easy way of handling this: just linearize your traits as needed.
 
-```scala
+~~~scala
 trait YourModule extends SomeOtherModule {
 	case class YourNewConcept(aField: SomeOtherModuleTypeConcept) extends SomeOtherModuleConcept
 }
-```
+~~~
 
 Remember that, in order to remain true to the Thin ideas, the language concepts themselves should only be the *abstract
 representation of your language ideas*. That means that they should refrain from containing syntactic related elements. This
 way they are easier to combine, and the syntax can be define for each user, or even create new *projective view* that
 represent it in a whole different way, maybe without any code at all.
 
-### Views
+###Views
 So where IS the syntax? Well, setting aside that Thin Languages don't really NEED to have ONE syntax, most language will
 need a way to be written into (and read from) text. Of course, some languages may also want to work their concepts using
 different, crazier interfaces, that could be implemented in all kinds of frontend technologies.
@@ -69,12 +68,12 @@ frontend tool can use to render them and let a user interact with a program defi
 
 With this in mind, the `LanguageView` trait should be quite simple to understand:
 
-```scala
+~~~scala
 trait LanguageView[ViewModel, ViewOptions, LanguageRequirement] {
 	def encode(target: LanguageConcept)(implicit language: LanguageRequirement, options: ViewOptions): Try[ViewModel]
 	def decode(target: ViewModel)(implicit language: LanguageRequirement,  options: ViewOptions): Try[LanguageConcept]
 }
-```
+~~~
 
 Where:
 - `ViewModel` is the type the view knows how to render. E.g. the ViewModel of a very simple view that renders code could be
@@ -101,10 +100,10 @@ code, as long as they implement the `Sourceable` trait.
 Remember, Views should only be defined if, for some reason, a frontend tool requires a different representation of your
 language's programs.
 
-### The Presenter Pattern
+###The Presenter Pattern
 Let's say you have created some language modules and would like use them along with a view:
 
-```scala
+~~~scala
 // Your Modules
 trait FooModule {
   case class Foo(n: Int) extends LanguageConcept
@@ -129,7 +128,7 @@ trait Fanciable {
 object YourLanguage extends Language
   with FooModule
   with BarModule
-```
+~~~
 
 From the code you can tell the `FancyView` need the language to extend the `Fanciable` trait in order to work. As in
 any other view, the LanguageRequirement traits are probably going to be the place where the hard stuff takes place.
@@ -141,7 +140,7 @@ breaking the views.
 
 Alternatively, you can just add a huge implementation of the language requirement in the language itself:
 
-```scala
+~~~scala
 object YourLanguage extends Language with Fanciable
   with FooModule
   with BarModule {
@@ -152,7 +151,7 @@ object YourLanguage extends Language with Fanciable
     case _ => super.getTheFancy(target)
   }
 }
-```
+~~~
 
 Althought this would kind of solve the problem it would be very repetitive, since every language that wants to render these
 modules with this view would have to repeat this code (and probably extend it to cover all the modules it wants to use),
@@ -164,7 +163,7 @@ others) without becoming coupled with the view itself.
 
 Here is how the final version would be:
 
-```scala
+~~~scala
 
 trait FanciableFoo extends Fanciable {on: Foo =>
   def getTheFancy(target: LanguageConcept) = target match {
@@ -183,7 +182,7 @@ trait FanciableBar extends Fanciable { on: Bar =>
 object YourLanguage extends Language
   with FooModule with FanciableFoo
   with BarModule with FanciableBar
-```
+~~~
 
 Notice how, if properly implemented, there would be no need for the language to declare any code, but it could be used,
 as any other type, to solve conflicts between modules or presenters. Also notice that each presenter should only need to be
@@ -193,17 +192,17 @@ uses.
 Presenters for popular views could be included in the modules packages themselves while presenters for new views could be
 declared anywhere, without affecting languages that won't use them.
 
-## Related Projects
+##Related Projects
 
 For a growing sanitized set of modules that work well with each other you can check the [Less Thin-Language](https://github.com/thin-languages/Less)
 
 We are also working on [Slimdown](https://github.com/thin-languages/Slimdown) a Thin-IDE, to provide desktop support to any *More* based language.
 
-## Contributions
+##Contributions
 
 Sure! Pull requests are always welcome, just try to keep it small and clean. Also feel free to post any question or bug
 report in the issue tracker.
 
-## License
+##License
 
 This code is open source software licensed under the [LGPL v3 License](https://www.gnu.org/licenses/lgpl.html) by [The Uqbar Foundation](http://www.uqbar-project.org/). Feel free to use it accordingly.
