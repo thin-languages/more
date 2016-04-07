@@ -18,6 +18,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
 
   implicit val options = GrammarPreferences(terminals, new EncodingPreferences)
 
+  val valueParser = new ValueParser("[a-z]+".r)
+  
   "Parser" - {
 
     "EmptyParser" - {
@@ -33,7 +35,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
     }
 
     "ValueParser" - {
-      implicit val parser = new ValueParser("[a-z]+".r)
+      implicit val parser = valueParser
 
       "should success when string matchs the regex" in {
         "var" should beParsedTo("var")
@@ -67,16 +69,29 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
         "X:" should beParsedTo("X", ":")
       }
 
-      "should fail when only first parser success" in {
+      "should fail when only left parser success" in {
         "X" shouldNot beParsedTo("","")
       }
 
-      "should fail when only second parser success" in {
+      "should fail when only right parser success" in {
         ":" shouldNot beParsedTo("","")
       }
 
       "should respect the order" in {
         ":X" shouldNot beParsedTo("","")
+      }
+    }
+    
+
+    "TransformParser" - {
+      implicit val parser = new TransformParser(valueParser)( x => x.length())
+
+      "should return transformed value" in {
+        "value" should beParsedTo(5)
+      }
+
+      "should fail when parser fails" in {
+        "Foo" shouldNot beParsedTo(0)
       }
     }
   }
