@@ -14,12 +14,24 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
     "EmptyParser" - {
       implicit val parser = EmptyParser
 
-      "should succeed for empty string" in {
+      "should success for empty string" in {
         "" should beParsedTo(null)
       }
       
       "should fail for non empty string" in {
         "somethign" shouldNot beParsedTo(null)
+      }
+    }
+    
+    "ValueParser" - {
+      implicit val parser = new ValueParser("[a-z]+".r)
+
+      "should success when string matchs the regex" in {
+        "var" should beParsedTo("var")
+      }
+      
+      "should fail when string doesn't match the regex" in {
+        "Var" shouldNot beParsedTo("var2")
       }
     }
   }
