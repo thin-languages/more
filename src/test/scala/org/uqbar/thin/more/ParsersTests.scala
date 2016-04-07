@@ -11,6 +11,13 @@ import org.uqbar.thin.more.views.source.EncodingPreferences
 
 class JavalessParserTest extends FreeSpec with Matchers with Parsers {
 
+  val terminals = Map[Symbol, String](
+    'Foo -> "Foo",
+    'X -> "X",
+    ': -> ":")
+
+  implicit val options = GrammarPreferences(terminals, new EncodingPreferences)
+
   "Parser" - {
 
     "EmptyParser" - {
@@ -38,12 +45,6 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
     }
 
     "TerminalParser" - {
-      val terminals = Map[Symbol, String](
-        'Foo -> "Foo",
-        'X -> "X:",
-        ': -> ":")
-
-      implicit val options = GrammarPreferences(terminals, new EncodingPreferences)
       implicit val parser = new TerminalParser('Foo)
 
       "should success when string matchs with terminal" in {
@@ -56,6 +57,26 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
 
       "should fail when string matchs other terminal" in {
         "X" shouldNot beParsedTo("")
+      }
+    }
+
+    "AppendParser" - {
+      implicit val parser = new AppendParser(new TerminalParser('X), new TerminalParser(':))
+
+      "should success when both parsers success" in {
+        "X:" should beParsedTo("X", ":")
+      }
+
+      "should fail when only first parser success" in {
+        "X" shouldNot beParsedTo("","")
+      }
+
+      "should fail when only second parser success" in {
+        ":" shouldNot beParsedTo("","")
+      }
+
+      "should respect the order" in {
+        ":X" shouldNot beParsedTo("","")
       }
     }
   }
