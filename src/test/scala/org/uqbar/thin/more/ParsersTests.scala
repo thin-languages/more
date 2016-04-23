@@ -31,7 +31,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
 
       "should fail for non empty string" in {
-        "somethign" shouldNot beParsedTo(null)
+        "somethign" shouldNot beParsed()
       }
     }
 
@@ -43,7 +43,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
 
       "should fail when string doesn't match the regex" in {
-        "Var" shouldNot beParsedTo("")
+        "Var" shouldNot beParsed()
       }
     }
 
@@ -55,11 +55,11 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
 
       "should fail when string doesn't match with terminal" in {
-        "foo" shouldNot beParsedTo("")
+        "foo" shouldNot beParsed()
       }
 
       "should fail when string matchs other terminal" in {
-        "X" shouldNot beParsedTo("")
+        "X" shouldNot beParsed()
       }
     }
 
@@ -71,15 +71,15 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
 
       "should fail when only left parser success" in {
-        "X" shouldNot beParsedTo("","")
+        "X" shouldNot beParsed()
       }
 
       "should fail when only right parser success" in {
-        ":" shouldNot beParsedTo("","")
+        ":" shouldNot beParsed()
       }
 
       "should respect the order" in {
-        ":X" shouldNot beParsedTo("","")
+        ":X" shouldNot beParsed()
       }
     }
 
@@ -91,7 +91,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
 
       "should fail when parser fails" in {
-        "Foo" shouldNot beParsedTo(0)
+        "Foo" shouldNot beParsed()
       }
     }
 
@@ -107,7 +107,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
       
       "should fail when both parsers fail" in {
-        "X" shouldNot beParsedTo("")
+        "X" shouldNot beParsed()
       }
     }
 
@@ -127,19 +127,30 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
       
       "should fail when item parser fails" in {
-        "one:Two" shouldNot beParsedTo(List(""))
+        "one:Two" shouldNot beParsed()
       }
       
       "should fail when separator parser fails" in {
-        "one|two" shouldNot beParsedTo(List(""))
+        "one|two" shouldNot beParsed()
       }
       
       "should fail when item is missing" in {
-        "one:" shouldNot beParsedTo(List(""))
-        ":two" shouldNot beParsedTo(List(""))
-        "one::three" shouldNot beParsedTo(List(""))
+        "one:" shouldNot beParsed()
+        ":two" shouldNot beParsed()
+        "one::three" shouldNot beParsed()
       }
     }
+  }
+}
+
+case class beParsed(implicit parser: Parsers#CodeParser[_]) extends Matcher[String] {
+  def apply(target: String) = {
+    val result = parser.apply(target)
+
+    MatchResult(
+      result.isSuccess,
+      "Parse failed! $result",
+      "Parse didn't fail! $result")
   }
 }
 
