@@ -82,7 +82,6 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
         ":X" shouldNot beParsedTo("","")
       }
     }
-    
 
     "TransformParser" - {
       implicit val parser = new TransformParser(lowerCaseValueParser)( x => x.length())
@@ -95,7 +94,6 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
         "Foo" shouldNot beParsedTo(0)
       }
     }
-    
 
     "OrParser" - {
       implicit val parser = new OrParser(fooTerminalParser, lowerCaseValueParser)
@@ -110,6 +108,36 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       
       "should fail when both parsers fail" in {
         "X" shouldNot beParsedTo("")
+      }
+    }
+
+    "RepeatParser" - {
+      implicit val parser = new RepeatParser(lowerCaseValueParser, new TerminalParser(':))
+
+      "should success for empty string" in {
+        "" should beParsedTo(List.empty[String])
+      }
+      
+      "should success for single item" in {
+        "one" should beParsedTo(List("one"))
+      }
+      
+      "should success for multiples items" in {
+        "one:two:three" should beParsedTo(List("one","two","three"))
+      }
+      
+      "should fail when item parser fails" in {
+        "one:Two" shouldNot beParsedTo(List(""))
+      }
+      
+      "should fail when separator parser fails" in {
+        "one|two" shouldNot beParsedTo(List(""))
+      }
+      
+      "should fail when item is missing" in {
+        "one:" shouldNot beParsedTo(List(""))
+        ":two" shouldNot beParsedTo(List(""))
+        "one::three" shouldNot beParsedTo(List(""))
       }
     }
   }
