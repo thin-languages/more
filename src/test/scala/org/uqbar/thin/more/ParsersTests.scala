@@ -18,7 +18,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
 
   implicit val options = GrammarPreferences(terminals, new EncodingPreferences)
 
-  val valueParser = new ValueParser("[a-z]+".r)
+  val lowerCaseValueParser = new ValueParser("[a-z]+".r)
+  val fooTerminalParser = new TerminalParser('Foo)
   
   "Parser" - {
 
@@ -35,7 +36,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
     }
 
     "ValueParser" - {
-      implicit val parser = valueParser
+      implicit val parser = lowerCaseValueParser
 
       "should success when string matchs the regex" in {
         "var" should beParsedTo("var")
@@ -47,7 +48,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
     }
 
     "TerminalParser" - {
-      implicit val parser = new TerminalParser('Foo)
+      implicit val parser = fooTerminalParser
 
       "should success when string matchs with terminal" in {
         "Foo" should beParsedTo("Foo")
@@ -84,7 +85,7 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
     
 
     "TransformParser" - {
-      implicit val parser = new TransformParser(valueParser)( x => x.length())
+      implicit val parser = new TransformParser(lowerCaseValueParser)( x => x.length())
 
       "should return transformed value" in {
         "value" should beParsedTo(5)
@@ -92,6 +93,23 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
 
       "should fail when parser fails" in {
         "Foo" shouldNot beParsedTo(0)
+      }
+    }
+    
+
+    "OrParser" - {
+      implicit val parser = new OrParser(fooTerminalParser, lowerCaseValueParser)
+
+      "should success when left parser success" in {
+        "Foo" should beParsedTo("Foo")
+      }
+      
+      "should success when rigth parser success" in {
+        "foo" should beParsedTo("foo")
+      }
+      
+      "should fail when both parsers fail" in {
+        "X" shouldNot beParsedTo("")
       }
     }
   }
