@@ -7,15 +7,18 @@ import scala.language.implicitConversions
 import scala.language.reflectiveCalls
 import scala.util.matching.Regex
 
+
 trait Grammars extends Parsers {
 
+	case class GrammarException(cause: String) extends RuntimeException(cause)
+	
 	protected sealed trait GrammarDefinition[-E, +D] {
 		def encoder(implicit preferences: GrammarPreferences) = {
 			def makeEncoder[E](grammar: GrammarDefinition[E, Any]): Encoder[E] = grammar match {
 				case Empty => new EmptyEncoder
-				case Fail => throw new RuntimeException("grammar reached fail point")
-				case l: Lexeme => new ValueEncoder
-				case c: Constant => new TerminalEncoder(c.key)
+				case Fail => throw new GrammarException("grammar reached fail point")
+				case l: Lexeme => new LexemeEncoder
+				case c: Constant => new ConstantEncoder(c.key)
 				case a: Append[_, _, _, _] => new AppendEncoder(makeEncoder(a.left), makeEncoder(a.right))
 				case t: Transform[_, _, _, _] => new TransformEncoder(makeEncoder(t.target))(t.tx)
 				case o: Or[_, _, _, _, _, _] => new OrEncoder(makeEncoder(o.left), makeEncoder(o.right))
@@ -28,9 +31,9 @@ trait Grammars extends Parsers {
 		def decoder(implicit preferences: GrammarPreferences) = {
 			def makeDecoder[D](grammar: GrammarDefinition[Nothing, D])(implicit preferences: GrammarPreferences): CodeParser[D] = grammar match {
 				case Empty => EmptyParser
-				case Fail => throw new RuntimeException("grammar reached fail point")
-				case l: Lexeme => new ValueParser(l.restriction)
-				case c: Constant => new TerminalParser(c.key)
+				case Fail => throw new GrammarException("grammar reached fail point")
+				case l: Lexeme => new LexemeParser(l.restriction)
+				case c: Constant => new ConstantParser(c.key)
 				case a: Append[_, _, _, _] => new AppendParser(makeDecoder(a.left), makeDecoder(a.right))
 				case t: Transform[_, _, _, _] => new TransformParser(makeDecoder(t.target))(t.xt)
 				case o: Or[_, _, _, _, _, _] => new OrParser(makeDecoder(o.left), makeDecoder(o.right))
@@ -40,7 +43,7 @@ trait Grammars extends Parsers {
 			makeDecoder(this)
 		}
 	}
-
+	
 	protected object Empty extends GrammarDefinition[Any, Null]
 
 	protected object Fail extends GrammarDefinition[Any, Nothing]
@@ -67,11 +70,11 @@ trait Grammars extends Parsers {
 		lazy val body = _body
 		lazy val separator = _separator
 	}
-
 }
 
 //TODO: Rename: Shouldn't this be SourcePreferences or something like that?
 case class GrammarPreferences(constants: Map[Symbol, String],	encodingPreferences: EncodingPreferences)
+
 
 //▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 // SYNTACTIC SUGAR

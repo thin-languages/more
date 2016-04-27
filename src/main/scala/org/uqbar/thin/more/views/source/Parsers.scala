@@ -16,9 +16,9 @@ trait Parsers extends RegexParsers {
 
 	object EmptyParser extends CodeParser[Null] { def _inner = "".r ^^^ null }
 	
-	class ValueParser(restriction: Regex) extends CodeParser[String] { def _inner = restriction }
+	class LexemeParser(restriction: Regex) extends CodeParser[String] { def _inner = restriction }
 	
-	class TerminalParser(key: Symbol)(implicit options: GrammarPreferences) extends CodeParser[String] { def _inner = if (options.constants(key) == " ") "".r else options.constants(key) } //TODO: Find better way to handle the space as parseable value
+	class ConstantParser(key: Symbol)(implicit options: GrammarPreferences) extends CodeParser[String] { def _inner = if (options.constants(key) == " ") "".r else options.constants(key) } //TODO: Find better way to handle the space as parseable value
 	
 	class AppendParser[T, S](left: => CodeParser[T], right: => CodeParser[S]) extends CodeParser[(T, S)] { def _inner = left.inner ~ right.inner ^^ { case l ~ r => (l, r) } }
 	
@@ -26,5 +26,5 @@ trait Parsers extends RegexParsers {
 	
 	class OrParser[T <: V, S <: V, V](left: => CodeParser[T], right: => CodeParser[S]) extends CodeParser[V] { def _inner = left.inner | right.inner }
 	
-	class RepeatParser[T, S](body: CodeParser[T], separator: CodeParser[S]) extends CodeParser[List[T]] { def _inner = repsep(body.inner, separator.inner) }
+	class RepeatParser[T](body: CodeParser[T], separator: CodeParser[Any]) extends CodeParser[List[T]] { def _inner = repsep(body.inner, separator.inner) }
 }

@@ -34,11 +34,11 @@ class EmptyEncoder()(implicit grammarPreferences: GrammarPreferences) extends En
 	protected def _encode(target: Any, level: Int) = Try("")
 }
 
-class ValueEncoder()(implicit grammarPreferences: GrammarPreferences) extends Encoder[Any] {
+class LexemeEncoder()(implicit grammarPreferences: GrammarPreferences) extends Encoder[Any] {
 	protected def _encode(target: Any, level: Int) = Try(tabulate(target.toString, level))
 }
 
-class TerminalEncoder(terminal: Symbol)(implicit grammarPreferences: GrammarPreferences) extends Encoder[Any] {
+class ConstantEncoder(terminal: Symbol)(implicit grammarPreferences: GrammarPreferences) extends Encoder[Any] {
 	protected def _encode(target: Any, level: Int) = Try(tabulate(terminals(terminal), level))
 }
 

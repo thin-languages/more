@@ -4,6 +4,7 @@ target
 .settings
 .cache
 .cache-main
+.cache-tests
 .README.md.html
 .worksheet
 .tmpBin
