@@ -77,55 +77,55 @@ class GrammarsTest extends FreeSpec with GrammarTest with GrammarSugar {
 		
 		"sugar" - {
 			"constants should be obtainable from symbols" in {
-				fail() //TODO
+				pending
 			}
 
 			"lexemes should be obtainable from regular expressions" in {
-				fail() //TODO
+				pending
 			}
 			
 			"lexemes should be obtainable from strings" in {
-				fail() //TODO
+				pending
 			}
 
 			"append should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 			
 			"append ignoring left should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 			
 			"append ignoring right should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 			
 			"or should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 			
 			"repeat without separator should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 
 			"repeat with separator should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 			
 			"transform should be obtainable from binary operator" in {
-				fail() //TODO
+				pending
 			}
 
 			"companion objects of case classes with arity 1 should be usable as transform argument" in {
-				fail() //TODO
+				pending
 			}
 			
 			"companion objects of case classes with arity 2 should be usable as transform argument" in {
-				fail() //TODO
+				pending
 			}
 			
 			"companion objects of case classes with arity +3 should be usable as transform argument" in {
-				fail() //TODO
+				pending
 			}
 			
 		}
@@ -133,6 +133,7 @@ class GrammarsTest extends FreeSpec with GrammarTest with GrammarSugar {
 }
 
 trait GrammarTest extends Matchers with Grammars {
+	//TODO
 //	case class beGrammar[G <: Grammarable[E,D]](target: G) extends Matcher[G] {
 //	}
 }
