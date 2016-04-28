@@ -7,11 +7,10 @@ import scala.language.implicitConversions
 import scala.language.reflectiveCalls
 import scala.util.matching.Regex
 
-
 trait Grammars extends Parsers {
 
 	case class GrammarException(cause: String) extends RuntimeException(cause)
-	
+
 	protected sealed trait GrammarDefinition[-E, +D] {
 		def encoder(implicit preferences: GrammarPreferences) = {
 			def makeEncoder[E](grammar: GrammarDefinition[E, Any]): Encoder[E] = grammar match {
@@ -43,38 +42,73 @@ trait Grammars extends Parsers {
 			makeDecoder(this)
 		}
 	}
-	
+
 	protected object Empty extends GrammarDefinition[Any, Null]
 
 	protected object Fail extends GrammarDefinition[Any, Nothing]
 
-	protected class Lexeme(val restriction: Regex) extends GrammarDefinition[String, String]
+	protected class Lexeme(val restriction: Regex) extends GrammarDefinition[String, String] {
+		override def equals(obj: Any) = obj match {
+			case g: Lexeme => g.restriction.toString == restriction.toString
+			case _ => super.equals(obj)
+		}
+		override def hashCode = restriction.hashCode
+	}
 
-	protected class Constant(val key: Symbol) extends GrammarDefinition[String, String]
+	protected class Constant(val key: Symbol) extends GrammarDefinition[String, String] {
+		override def equals(obj: Any) = obj match {
+			case g: Constant => g.key == key
+			case _ => super.equals(obj)
+		}
+		override def hashCode = key.hashCode
+	}
 
 	protected class Transform[E, D, TE, TD](_target: => GrammarDefinition[E, D])(val tx: TE => E)(val xt: D => TD) extends GrammarDefinition[TE, TD] {
 		lazy val target = _target
+
+		override def equals(obj: Any) = obj match {
+			case g: Transform[E, D, TE, TD] => g.target == target
+			case _ => super.equals(obj)
+		}
+		override def hashCode = target.hashCode
 	}
 
 	protected class Append[LE, LD, RE, RD](_left: => GrammarDefinition[LE, LD], _right: => GrammarDefinition[RE, RD]) extends GrammarDefinition[(LE, RE), (LD, RD)] {
 		lazy val left = _left
 		lazy val right = _right
+
+		override def equals(obj: Any) = obj match {
+			case g: Append[LE, LD, RE, RD] => g.left == left && g.right == right
+			case _ => super.equals(obj)
+		}
+		override def hashCode = left.hashCode + right.hashCode
 	}
 
 	protected class Or[LE <: E, RE <: E, E, LD <: D, RD <: D, D](_left: => GrammarDefinition[LE, LD], _right: => GrammarDefinition[RE, RD]) extends GrammarDefinition[E, D] {
 		lazy val left = _left
 		lazy val right = _right
+
+		override def equals(obj: Any) = obj match {
+			case g: Or[LE, RE, E, LE, RD, D] => g.left == left && g.right == right
+			case _ => super.equals(obj)
+		}
+		override def hashCode = left.hashCode + right.hashCode
 	}
 
 	protected class Repeat[E, D](_body: => GrammarDefinition[E, D], _separator: => GrammarDefinition[Null, Any] = Empty) extends GrammarDefinition[List[E], List[D]] {
 		lazy val body = _body
 		lazy val separator = _separator
+
+		override def equals(obj: Any) = obj match {
+			case g: Repeat[E, D] => g.body == body && g.separator == separator
+			case _ => super.equals(obj)
+		}
+		override def hashCode = body.hashCode + separator.hashCode
 	}
 }
 
 //TODO: Rename: Shouldn't this be SourcePreferences or something like that?
-case class GrammarPreferences(constants: Map[Symbol, String],	encodingPreferences: EncodingPreferences)
-
+case class GrammarPreferences(constants: Map[Symbol, String], encodingPreferences: EncodingPreferences)
 
 //▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 // SYNTACTIC SUGAR
@@ -96,38 +130,39 @@ trait GrammarSugar extends Grammars {
 		def ~[RE, RD](other: => GrammarDefinition[RE, RD]) = new Append(grammar, other)
 		def |[E >: LE, RE <: E, D >: LD, RD <: D](other: => GrammarDefinition[RE, RD]) = new Or[LE, RE, E, LD, RD, D](grammar, other)
 		def * = new Repeat(grammar)
-		def *~(separator: GrammarDefinition[Any, Null]) = new Repeat(grammar, separator)
+		def *~(separator: GrammarDefinition[Null, Any]) = new Repeat(grammar, separator)
 		def ~>[RE, RD](other: => GrammarDefinition[RE, RD]) = grammar ~ other ^^ { x: RE => (null.asInstanceOf[LE], x) } -> { t: (LD, RD) => t._2 }
 		def <~[RE, RD](other: => GrammarDefinition[RE, RD]) = grammar ~ other ^^ { x: LE => (x, null.asInstanceOf[RE]) } -> { t: (LD, RD) => t._1 }
 		def ^^[TE, TD](txs: (TE => LE, LD => TD)) = new Transform(grammar)(txs._1)(txs._2)
 	}
 
-	//	implicit def companionToTransformation1[P1, O <: AnyRef](c: Product{def apply(p: P1): O}): (O => P1, P1 => O) = (
-	//		{o: O => c.getClass.getMethods.find{m: Method => m.getName == "unapply"}.get.invoke(c,o).asInstanceOf[Option[P1]].get },
-	//		{ case p1 => c.apply(p1) }
-	//	)
-
-	implicit def companionToTransformationN[T <: Product, NT <: Tuple2[_, _], O <: AnyRef](c: { def tupled: T => O }): (O => NT, NT => O) = (
-		{ o: O => c.getClass.getMethods.find{ m: Method => m.getName == "unapply" }.get.invoke(c, o).asInstanceOf[Option[T]].get.productIterator.toList.reverse.reduceLeft{ (a, e) => (e, a) }.asInstanceOf[NT] },
-		{ nt: NT =>
-			def flattened(t: Tuple2[_, _]): List[Any] = t match {
-				case (a, b: Tuple2[_, _]) => a :: flattened(b)
-				case (a, b) => a :: b :: Nil
-			}
-			c.tupled((flattened(nt) match {
-				case p1 :: p2 :: Nil => (p1, p2)
-				case p1 :: p2 :: p3 :: Nil => (p1, p2, p3)
-				case p1 :: p2 :: p3 :: p4 :: Nil => (p1, p2, p3, p4)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: Nil => (p1, p2, p3, p4, p5)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: Nil => (p1, p2, p3, p4, p5, p6)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: Nil => (p1, p2, p3, p4, p5, p6, p7)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: p9 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8, p9)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: p9 :: p10 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
-				case p1 :: p2 :: p3 :: p4 :: p5 :: p6 :: p7 :: p8 :: p9 :: p10 :: p11 :: Nil => (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)
-				case _ => throw new RuntimeException("Unsupported case") // TODO: Better error?
-				//TODO? etc
-			}).asInstanceOf[T])
-		}
+	implicit def companionToTransformation1[T, O <: AnyRef](companion: T => O): (O => T, T => O) = (
+		{ obj: O =>
+			val Some(unapply) = companion.getClass.getMethods.find{m: Method => m.getName == "unapply"}
+			val Some(unapplied) = unapply.invoke(companion,obj).asInstanceOf[Option[T]]
+			unapplied
+		},
+		companion.apply
 	)
+
+	implicit def companionToTransformationN[T <: Product, NT <: Tuple2[_, _], O <: AnyRef](companion: { def tupled: T => O }): (O => NT, NT => O) = {
+		def nestedTupleToList(t: Tuple2[_, _]): List[Any] = t match {
+			case (a: Tuple2[_, _], b) => nestedTupleToList(a) ::: b :: Nil
+			case (a, b) => a :: b :: Nil
+		}
+
+		def objectToNestedTuple(obj: O) = {
+			val Some(unapply) = companion.getClass.getMethods.find{ m: Method => m.getName == "unapply" }
+			val Some(unapplied) = unapply.invoke(companion, obj).asInstanceOf[Option[T]]
+			unapplied.productIterator.reduceLeft{ (e, a) => (e, a) }.asInstanceOf[NT]
+		}
+
+		def nestedTupleToFlattenedTuple(nestedTuple: NT) = {
+			val elements = nestedTupleToList(nestedTuple).map(_.asInstanceOf[Object])
+  		val tupleClass = Class.forName("scala.Tuple" + elements.size)
+  		tupleClass.getConstructors.apply(0).newInstance(elements:_*).asInstanceOf[T]
+		}
+
+		(objectToNestedTuple, { nestedTuple: NT => companion.tupled(nestedTupleToFlattenedTuple(nestedTuple)) })
+	}
 }
