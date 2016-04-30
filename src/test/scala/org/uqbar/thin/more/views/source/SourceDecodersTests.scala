@@ -1,30 +1,34 @@
-package org.uqbar.thin.more
+package org.uqbar.thin.more.views.source
 
-import org.scalatest.Finders
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
-import org.uqbar.thin.more.views.source.Parsers
-import org.uqbar.thin.more.views.source.GrammarPreferences
-import org.uqbar.thin.more.views.source.EncodingPreferences
+import org.uqbar.thin.more.views.source.SourceDecoders.SourceDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.EmptyDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.LexemeDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.ConstantDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.AppendDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.TransformDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.OrDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.RepeatDecoder
 
-class JavalessParserTest extends FreeSpec with Matchers with Parsers {
+class SourceDecodersTests extends FreeSpec with Matchers {
 
   val terminals = Map[Symbol, String](
     'Foo -> "Foo",
     'X -> "X",
     ': -> ":")
 
-  implicit val options = GrammarPreferences(terminals, new EncodingPreferences)
+  implicit val preferences = SourceViewPreferences(terminals, new FormattingPreferences)
 
-  val lowerCaseValueParser = new ValueParser("[a-z]+".r)
-  val fooTerminalParser = new TerminalParser('Foo)
+  val lowerCaseLexemeDecoder = new LexemeDecoder("[a-z]+".r)
+  val fooConstantDecoder = new ConstantDecoder('Foo)
   
-  "Parser" - {
+  "SourceDecoder" - {
 
-    "EmptyParser" - {
-      implicit val parser = EmptyParser
+    "EmptyDecoder" - {
+      implicit val decoder = EmptyDecoder
 
       "should success for empty string" in {
         "" should beParsedTo(null)
@@ -35,8 +39,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
     }
 
-    "ValueParser" - {
-      implicit val parser = lowerCaseValueParser
+    "LexemeDecoder" - {
+      implicit val decoder = lowerCaseLexemeDecoder
 
       "should success when string matchs the regex" in {
         "var" should beParsedTo("var")
@@ -47,8 +51,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
     }
 
-    "TerminalParser" - {
-      implicit val parser = fooTerminalParser
+    "ConstantDecoder" - {
+      implicit val decoder = fooConstantDecoder
 
       "should success when string matchs with terminal" in {
         "Foo" should beParsedTo("Foo")
@@ -63,8 +67,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
     }
 
-    "AppendParser" - {
-      implicit val parser = new AppendParser(new TerminalParser('X), new TerminalParser(':))
+    "AppendDecoder" - {
+      implicit val decoder = new AppendDecoder(new ConstantDecoder('X), new ConstantDecoder(':))
 
       "should success when both parsers success" in {
         "X:" should beParsedTo("X", ":")
@@ -83,8 +87,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
     }
 
-    "TransformParser" - {
-      implicit val parser = new TransformParser(lowerCaseValueParser)( x => x.length())
+    "TransformDecoder" - {
+      implicit val decoder = new TransformDecoder(lowerCaseLexemeDecoder)( x => x.length())
 
       "should return transformed value" in {
         "value" should beParsedTo(5)
@@ -95,8 +99,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
     }
 
-    "OrParser" - {
-      implicit val parser = new OrParser(fooTerminalParser, lowerCaseValueParser)
+    "OrDecoder" - {
+      implicit val decoder = new OrDecoder(fooConstantDecoder, lowerCaseLexemeDecoder)
 
       "should success when left parser success" in {
         "Foo" should beParsedTo("Foo")
@@ -111,8 +115,8 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
       }
     }
 
-    "RepeatParser" - {
-      implicit val parser = new RepeatParser(lowerCaseValueParser, new TerminalParser(':))
+    "RepeatDecoder" - {
+      implicit val decoder = new RepeatDecoder(lowerCaseLexemeDecoder, new ConstantDecoder(':))
 
       "should success for empty string" in {
         "" should beParsedTo(List.empty[String])
@@ -143,9 +147,9 @@ class JavalessParserTest extends FreeSpec with Matchers with Parsers {
   }
 }
 
-case class beParsed(implicit parser: Parsers#CodeParser[_]) extends Matcher[String] {
+case class beParsed(implicit decoder: SourceDecoder[_]) extends Matcher[String] {
   def apply(target: String) = {
-    val result = parser.apply(target)
+    val result = decoder.apply(target)
 
     MatchResult(
       result.isSuccess,
@@ -154,13 +158,13 @@ case class beParsed(implicit parser: Parsers#CodeParser[_]) extends Matcher[Stri
   }
 }
 
-case class beParsedTo[T](expected: T)(implicit parser: Parsers#CodeParser[T]) extends Matcher[String] {
+case class beParsedTo[T](expected: T)(implicit decoder: SourceDecoder[T]) extends Matcher[String] {
   def apply(target: String) = {
-    val result = parser.apply(target)
+    val result = decoder.apply(target)
 
     MatchResult(
-      result.map { parsed => parsed == expected }.getOrElse(false),
-      result.map { parsed => s"Parsed $parsed did not equal $expected" }.getOrElse(s"Parse failed! $result"),
-      result.map { parsed => s"Parsed $parsed was equal to $expected" }.getOrElse(s"Parse didn't fail! $result"))
+      result.map { decoded => decoded == expected }.getOrElse(false),
+      result.map { decoded => s"Parsed $decoded did not equal $expected" }.getOrElse(s"Parse failed! $result"),
+      result.map { decoded => s"Parsed $decoded was equal to $expected" }.getOrElse(s"Parse didn't fail! $result"))
   }
 }  
