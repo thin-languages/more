@@ -1,9 +1,15 @@
 package org.uqbar.thin.more.views.source
 
-import org.uqbar.thin.more._
+import org.uqbar.thin.more.LanguageConcept
+import org.uqbar.thin.more.LanguageView
+import org.uqbar.thin.more.views.source.GrammarDefinition.GrammarToDecoder
+import org.uqbar.thin.more.views.source.GrammarDefinition.GrammarToEncoder
+import org.uqbar.thin.more.views.source.SourceDecoders.SourceDecoder
+import org.uqbar.thin.more.views.source.SourceEncoders.SourceEncoder
 import org.uqbar.utils.collections.immutable.IdentityMap
-import SourceEncoders.SourceEncoder
+
 import SourceDecoders.SourceDecoder
+import SourceEncoders.SourceEncoder
 
 object SourceView extends LanguageView[Source, SourceViewPreferences, Sourceable] {
 	def encode(target: LanguageConcept)(implicit language: Sourceable, options: SourceViewPreferences) = {
@@ -60,18 +66,17 @@ case class Source(text: String = "", references: IdentityMap[Any, Range] = Ident
 
 case class SourceViewPreferences(constants: Map[Symbol, String], formattingPreferences: FormattingPreferences)
 case class FormattingPreferences( //TODO!! Adjust Locations and Orders to work on grammars instead of encoders
-//		protected val spacing: Set[LocationRule[Any]] = Set(),
+		//		protected val spacing: Set[LocationRule[Any]] = Set(),
 		protected val tabulationSequence: String = "\t",
-		protected val tabulationSize: Int = 1
-//		protected val lineBreaks: Map[LocationRule[Any], Int] = Map(),
-//		protected val tabulationLevelIncrements: Map[LocationRule[Any], Int] = Map(),
-//		protected val sortOrders: Set[Order[_]] = Set()
-) {
-//	def tabulationLevelIncrement(locationKey: LocationKey[_]) = tabulationLevelIncrements.collectFirst{ case (l, i) if l.matches(locationKey) => i } getOrElse 0
-//	def space(locationKey: LocationKey[_]) = spacing.collectFirst{ case l if l.matches(locationKey) => " " } getOrElse ""
-//	def lineBreak(locationKey: LocationKey[_]) = "\n" * lineBreaks.collect{ case (l, count) if l.matches(locationKey) => count }.sum
-//	def tabulation(level: Int) = tabulationSequence * tabulationSize * level
-//	def sortOrder[T](target: GrammarEncoder[List[T]]) = sortOrders.collectFirst { case order @ Order(`target`) => order.criteria.asInstanceOf[(T, T) => Boolean] }
+		protected val tabulationSize: Int = 1 //		protected val lineBreaks: Map[LocationRule[Any], Int] = Map(),
+		//		protected val tabulationLevelIncrements: Map[LocationRule[Any], Int] = Map(),
+		//		protected val sortOrders: Set[Order[_]] = Set()
+		) {
+	//	def tabulationLevelIncrement(locationKey: LocationKey[_]) = tabulationLevelIncrements.collectFirst{ case (l, i) if l.matches(locationKey) => i } getOrElse 0
+	//	def space(locationKey: LocationKey[_]) = spacing.collectFirst{ case l if l.matches(locationKey) => " " } getOrElse ""
+	//	def lineBreak(locationKey: LocationKey[_]) = "\n" * lineBreaks.collect{ case (l, count) if l.matches(locationKey) => count }.sum
+	//	def tabulation(level: Int) = tabulationSequence * tabulationSize * level
+	//	def sortOrder[T](target: GrammarEncoder[List[T]]) = sortOrders.collectFirst { case order @ Order(`target`) => order.criteria.asInstanceOf[(T, T) => Boolean] }
 }
 //case class Order[T](target: GrammarEncoder[List[T]])(val criteria: (T, T) => Boolean)
 //trait Location[+T] {

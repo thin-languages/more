@@ -1,20 +1,7 @@
-package org.uqbar.thin.more
+package org.uqbar.thin.more.views.source
 
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
-import org.scalatest.matchers.Matcher
-import org.uqbar.thin.more.views.source._
-import org.uqbar.thin.more.views.source.GrammarSugar
-import org.uqbar.thin.more.views.source.Transform
-import org.uqbar.thin.more.views.source.Repeat
-import org.uqbar.thin.more.views.source.Or
-import org.uqbar.thin.more.views.source.Lexeme
-import org.uqbar.thin.more.views.source.GrammarException
-import org.uqbar.thin.more.views.source.Fail
-import org.uqbar.thin.more.views.source.Empty
-import org.uqbar.thin.more.views.source.Constant
-import org.uqbar.thin.more.views.source.Append
-import org.uqbar.thin.more.views.source.SourceDecoders._
 
 class GrammarsTest extends FreeSpec with Matchers with GrammarSugar {
 

@@ -1,12 +1,13 @@
 package org.uqbar.thin.more.views.source
 
-import scala.util.parsing.combinator.RegexParsers
-import scala.util.matching.Regex
 import scala.util.Try
+import scala.util.matching.Regex
+import scala.util.parsing.combinator.RegexParsers
+
 import org.uqbar.thin.more.DecodeException
 
 object SourceDecoders extends RegexParsers {
-	
+
 	sealed abstract class SourceDecoder[+T] {
 		lazy val inner = _inner
 		protected def _inner: Parser[T]

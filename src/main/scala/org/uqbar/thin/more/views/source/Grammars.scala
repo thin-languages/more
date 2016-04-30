@@ -7,8 +7,22 @@ import scala.language.implicitConversions
 import scala.language.reflectiveCalls
 import scala.util.matching.Regex
 
-import org.uqbar.thin.more.views.source.SourceDecoders._
-import org.uqbar.thin.more.views.source.SourceEncoders._
+import org.uqbar.thin.more.views.source.SourceDecoders.AppendDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.ConstantDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.EmptyDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.LexemeDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.OrDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.RepeatDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.SourceDecoder
+import org.uqbar.thin.more.views.source.SourceDecoders.TransformDecoder
+import org.uqbar.thin.more.views.source.SourceEncoders.AppendEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.ConstantEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.EmptyEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.LexemeEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.OrEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.RepeatEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.SourceEncoder
+import org.uqbar.thin.more.views.source.SourceEncoders.TransformEncoder
 
 //▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 // GRAMMARS

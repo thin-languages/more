@@ -7,11 +7,10 @@ import scala.util.Try
 object SourceEncoders {
 
 	abstract class SourceEncoder[-T](implicit preferences: SourceViewPreferences) {
-		implicit def StringToSource(s: String) = Source(s)
 
 		def apply(target: T, level: Int = 0) = for {
 			content <- encode(target, level /*TODO!! + preferences.tabulationLevelIncrement(On(this) on target) */ )
-		} yield formated(content referencing target, target)
+		} yield formated(content, target)
 
 		protected def formated(result: Source, target: T) =
 			//TODO!!preferences.lineBreak(After(this) on target) ++
@@ -26,15 +25,15 @@ object SourceEncoders {
 	}
 
 	class EmptyEncoder()(implicit preferences: SourceViewPreferences) extends SourceEncoder[Any] {
-		protected def encode(target: Any, level: Int) = Try("")
+		protected def encode(target: Any, level: Int) = Try(Source())
 	}
 
 	class LexemeEncoder()(implicit preferences: SourceViewPreferences) extends SourceEncoder[Any] {
-		protected def encode(target: Any, level: Int) = Try(tabulate(target.toString, level))
+		protected def encode(target: Any, level: Int) = Try(tabulate(Source(target.toString), level) referencing target)
 	}
 
 	class ConstantEncoder(terminal: Symbol)(implicit preferences: SourceViewPreferences) extends SourceEncoder[Any] {
-		protected def encode(target: Any, level: Int) = Try(tabulate(preferences.constants(terminal), level))
+		protected def encode(target: Any, level: Int) = Try(tabulate(Source(preferences.constants(terminal)) referencing target, level))
 	}
 
 	class AppendEncoder[T, S](left: => SourceEncoder[T], right: => SourceEncoder[S])(implicit preferences: SourceViewPreferences) extends SourceEncoder[(T, S)] {
@@ -47,7 +46,7 @@ object SourceEncoders {
 	class TransformEncoder[T, S](before: => SourceEncoder[S])(f: T => S)(implicit preferences: SourceViewPreferences) extends SourceEncoder[T] {
 		protected def encode(target: T, level: Int) = for {
 			next <- before(f(target), level)
-		} yield next
+		} yield next referencing target
 	}
 
 	class OrEncoder[T, -L <: T, -R <: T](left: => SourceEncoder[L], right: => SourceEncoder[R])(implicit preferences: SourceViewPreferences) extends SourceEncoder[T] {
@@ -58,15 +57,17 @@ object SourceEncoders {
 	class RepeatEncoder[-T](body: => SourceEncoder[T], separator: => SourceEncoder[Null])(implicit preferences: SourceViewPreferences) extends SourceEncoder[Seq[T]] {
 		protected def encode(target: Seq[T], level: Int) = {
 			val sortedTarget = target //TODO!!  preferences.sortOrder(this).fold(target){ target.sortWith(_) }
-			if (sortedTarget.isEmpty) Try("")
-			else ((body(sortedTarget.head, level), sortedTarget.head) /: sortedTarget.tail){
-				case ((previous, previousElem), elem) =>
-					(for {
-						previous <- previous
-						separator <- separator(null)
-						elemBody <- body(elem, level)
-					} yield previous ++ separator.dropReferences /*TODO!!++ preferences.lineBreak(InBetween(this) on (previousElem, elem, sortedTarget))*/ ++ elemBody, elem)
-			}._1
+			(
+				if (sortedTarget.isEmpty) Try(Source())
+				else ((body(sortedTarget.head, level), sortedTarget.head) /: sortedTarget.tail){
+					case ((previous, previousElem), elem) =>
+						(for {
+							previous <- previous
+							separator <- separator(null)
+							elemBody <- body(elem, level)
+						} yield previous ++ separator.dropReferences /*TODO!!++ preferences.lineBreak(InBetween(this) on (previousElem, elem, sortedTarget))*/ ++ elemBody, elem)
+				}._1
+			).map{ _ referencing target }
 		}
 	}
 }
